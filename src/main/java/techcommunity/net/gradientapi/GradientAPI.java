@@ -11,22 +11,19 @@ public final class GradientAPI {
             Pattern.compile("\\{#([A-Fa-f0-9]{6})>}(.+?)\\{#([A-Fa-f0-9]{6})<}")
     };
 
-    public static String applyAll(String text)
-    {
-        return applyGradient(applyChatColors(text));
+    public static String applyAll(String text) {
+        return applyGradient(translateAlternateColorCodes('&', text));
     }
 
-    public static String applyGradient(String textToTranslate)
-    {
-        for (Pattern pattern : GRADIENT_PATTERNS)
+    public static String applyGradient(String textToTranslate) {
+        for (Pattern pattern : GRADIENT_PATTERNS) {
             textToTranslate = applyGradientPattern(textToTranslate, pattern);
-
+        }
         return textToTranslate;
     }
 
-    public static String applyChatColors(String textToTranslate)
-    {
-        return ChatColor.translateAlternateColorCodes('&', textToTranslate);
+    public static String translateAlternateColorCodes(char altColorChar, String textToTranslate) {
+        return ChatColor.translateAlternateColorCodes(altColorChar, textToTranslate);
     }
 
     private static String applyGradientPattern(String textToTranslate, Pattern pattern) {
@@ -41,7 +38,7 @@ public final class GradientAPI {
             if (isValidHexColor(startColor) && isValidHexColor(endColor)) {
                 matcher.appendReplacement(sb, applyGradient(content, startColor, endColor));
             } else {
-                matcher.appendReplacement(sb, content);
+                matcher.appendReplacement(sb, content); // просто добавляем текст, если цвет недействителен
             }
         }
         matcher.appendTail(sb);
@@ -52,10 +49,20 @@ public final class GradientAPI {
     private static String applyGradient(String text, String startColor, String endColor) {
         StringBuilder gradientText = new StringBuilder();
         int length = text.length();
+        int plainCharCount = text.replaceAll("(?i)" + ChatColor.COLOR_CHAR + "[0-9A-FK-OR]", "").length();
+        int colorIndex = 0;
+
         for (int i = 0; i < length; i++) {
-            float ratio = (float) i / (float) (length - 1);
-            String color = blendColors(startColor, endColor, ratio);
-            gradientText.append(ChatColor.of(color)).append(text.charAt(i));
+            if (text.charAt(i) == ChatColor.COLOR_CHAR) {
+                gradientText.append(ChatColor.COLOR_CHAR);
+                i++;
+                gradientText.append(text.charAt(i));
+            } else {
+                float ratio = (float) colorIndex / (float) (plainCharCount - 1);
+                String color = blendColors(startColor, endColor, ratio);
+                gradientText.append(ChatColor.of(color)).append(text.charAt(i));
+                colorIndex++;
+            }
         }
         return gradientText.toString();
     }

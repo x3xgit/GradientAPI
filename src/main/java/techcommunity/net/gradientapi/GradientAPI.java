@@ -12,7 +12,7 @@ public final class GradientAPI {
     };
 
     public static String applyAll(String text) {
-        return applyGradient(translateAlternateColorCodes('&', text));
+        return applyGradient(applyChatColors(text));
     }
 
     public static String applyGradient(String textToTranslate) {
@@ -22,8 +22,8 @@ public final class GradientAPI {
         return textToTranslate;
     }
 
-    public static String translateAlternateColorCodes(char altColorChar, String textToTranslate) {
-        return ChatColor.translateAlternateColorCodes(altColorChar, textToTranslate);
+    public static String applyChatColors(String textToTranslate) {
+        return ChatColor.translateAlternateColorCodes('&', textToTranslate);
     }
 
     private static String applyGradientPattern(String textToTranslate, Pattern pattern) {
@@ -49,18 +49,19 @@ public final class GradientAPI {
     private static String applyGradient(String text, String startColor, String endColor) {
         StringBuilder gradientText = new StringBuilder();
         int length = text.length();
-        int plainCharCount = text.replaceAll("(?i)" + ChatColor.COLOR_CHAR + "[0-9A-FK-OR]", "").length();
+        String plainText = text.replaceAll("(?i)" + ChatColor.COLOR_CHAR + "[0-9A-FK-OR]", "");
+        int plainCharCount = plainText.length();
         int colorIndex = 0;
+        String currentFormatting = "";
 
         for (int i = 0; i < length; i++) {
             if (text.charAt(i) == ChatColor.COLOR_CHAR) {
-                gradientText.append(ChatColor.COLOR_CHAR);
-                i++;
-                gradientText.append(text.charAt(i));
+                currentFormatting += ChatColor.COLOR_CHAR + text.substring(i + 1, i + 2);
+                i++; // пропускаем следующий символ, так как это часть кода цвета
             } else {
                 float ratio = (float) colorIndex / (float) (plainCharCount - 1);
                 String color = blendColors(startColor, endColor, ratio);
-                gradientText.append(ChatColor.of(color)).append(text.charAt(i));
+                gradientText.append(ChatColor.of(color)).append(currentFormatting).append(text.charAt(i));
                 colorIndex++;
             }
         }
